@@ -1,8 +1,8 @@
 import { IonApp, IonRouterOutlet, IonSplitPane, setupIonicReact } from '@ionic/react';
 import { IonReactRouter } from '@ionic/react-router';
 import { Redirect, Route } from 'react-router-dom';
-import Menu from './components/Menu';
-import Page from './pages/Page';
+import Menu from './components/MainMenu';
+
 
 /* Core CSS required for Ionic components to work properly */
 import '@ionic/react/css/core.css';
@@ -36,24 +36,47 @@ import './theme/variables.css';
 
 setupIonicReact();
 
-const App: React.FC = () => {
-  return (
-    <IonApp>
-      <IonReactRouter>
-        <IonSplitPane contentId="main">
-          <Menu />
-          <IonRouterOutlet id="main">
-            <Route path="/" exact={true}>
-              <Redirect to="/folder/Inbox" />
-            </Route>
-            <Route path="/folder/:name" exact={true}>
-              <Page />
-            </Route>
-          </IonRouterOutlet>
-        </IonSplitPane>
-      </IonReactRouter>
-    </IonApp>
-  );
-};
+import {
+  IonContent,
+  IonHeader,
+  IonMenu,
+  IonTitle,
+  IonToolbar,
+  IonList,
+  IonItem,
+  IonMenuToggle,
+  IonLabel,
+  IonIcon,
+} from "@ionic/react";
+
+import {
+  homeOutline,
+  addCircleOutline,
+  peopleOutline
+} from "ionicons/icons";
+
+
+import Home from "./pages/Home";
+import ClientForm from "./pages/ClientForm";
+import ClientsList from "./pages/ClientsList";
+import MainMenu from './components/MainMenu';
+
+const App: React.FC = () => (
+  <IonApp>
+    <IonReactRouter>
+      <IonSplitPane contentId="main">
+        <MainMenu></MainMenu>
+
+        <IonRouterOutlet id="main">
+          <Route exact path="/home" component={Home} />
+          <Route exact path="/client-form" component={ClientForm} />
+          <Route exact path="/client-form/:id" component={ClientForm} />
+          <Route exact path="/clients" component={ClientsList} />
+          <Redirect exact from="/" to="/home" />
+        </IonRouterOutlet>
+      </IonSplitPane>
+    </IonReactRouter>
+  </IonApp>
+);
 
 export default App;

@@ -1,0 +1,9 @@
+.table-bordered .ion-col {
+ border: 1px solid #ccc;
+ padding: 8px;
+}
+
+.table-bordered .header-row {
+ font-weight: bold;
+ background-color: #f1f1f1;
+}
