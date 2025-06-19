@@ -1,19 +1,16 @@
 import {
   IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonInput, IonItem,
-  IonLabel, IonButton, IonList, IonToast, IonIcon
+  IonLabel, IonButton, IonList, IonToast, IonIcon,
+  useIonViewWillEnter
 } from "@ionic/react";
 import { trashOutline, pencilOutline } from "ionicons/icons";
 import React, { useEffect, useState } from "react";
 import { useParams, useHistory } from "react-router-dom";
-import { getClients, saveClients } from "../data/storage";
 import { Client } from "../types/client";
 import { InputCustomEvent } from "@ionic/react";
-
-type Exercise = {
-  name: string;
-  weight: number;
-  reps: number;
-};
+import { Exercise } from "../types/exercise";
+import { getClientsLocal, saveClientLocal, updateClientLocal } from "../data/storage/clientStorage";
+import { deleteExerciseLocal, getExercisesLocal, saveExerciseLocal, updateExerciseLocal } from "../data/storage/exerciseStorage";
 
 const ClientForm: React.FC = () => {
   const { id } = useParams<{ id?: string }>();
@@ -29,27 +26,54 @@ const ClientForm: React.FC = () => {
   const [exerciseName, setExerciseName] = useState("");
   const [exerciseWeight, setExerciseWeight] = useState(0);
   const [exerciseReps, setExerciseReps] = useState(0);
+  const [exerciseId, setExerciseId] = useState<number>(-1);
   const [editingExerciseIndex, setEditingExerciseIndex] = useState<number | null>(null);
+  const [formLoaded, setFormLoaded] = useState(false);
 
-  useEffect(() => {
-    if (id) {
-      getClients().then(clients => {
-        const client = clients.find(c => c.id.toString() === id);
-        if (client) {
-          setName(client.name);
-          setPhone(client.phone);
-          setExercises(client.exercises);
-        }
-      });
+  useIonViewWillEnter(() => {
+    const initForm = async () => {
+      setFormLoaded(false); // Bloquea render al principio
+
+      if (id) {
+        await loadClient();
+        await loadExercisesByClientId(parseInt(id, 10));
+      } else {
+        setName("");
+        setPhone("");
+        setExercises([]);
+        clearExerciseForm();
+      }
+
+      setFormLoaded(true); // Solo activa render cuando todo esté listo
+    };
+
+    initForm(); // Llamada a la función async
+  });
+
+
+
+
+  const loadClient = async () => {
+    const data = await getClientsLocal();
+    const client = data.find(c => c.id.toString() === id);
+    if (client) {
+      setName(client.name);
+      setPhone(client.phone);
     }
-  }, [id]);
+  };
+
+
+  const loadExercisesByClientId = async (clientId: number) => {
+    const allExercises = await getExercisesLocal();
+    setExercises(allExercises.filter(ex => ex.id_client === clientId));
+  }
+
 
   useEffect(() => {
     const validName = !!name?.trim();
     const validPhone = !!phone?.trim();
-    const hasExercises = exercises.length > 0;
 
-    setClientReady(validName && validPhone && hasExercises);
+    setClientReady(validName && validPhone);
   }, [name, phone, exercises]);
 
 
@@ -61,102 +85,158 @@ const ClientForm: React.FC = () => {
     setShowExerciseForm(true);
   };
 
-  const saveExercise = () => {
-    const newExercise: Exercise = {
+  const clearExerciseForm = () => {
+    setExerciseName("");
+    setExerciseWeight(0);
+    setExerciseReps(0);
+    setEditingExerciseIndex(null);
+    setExerciseId(-1);
+    setShowExerciseForm(false);
+  }
+
+
+  const submitExercise = async () => {
+
+    const exercise: Exercise = {
+      id: exerciseId ? exerciseId : Date.now(), // Generate a new ID for new exercises
       name: exerciseName,
-      weight: exerciseWeight,
-      reps: exerciseReps
+      max_weight: exerciseWeight,
+      max_reps: exerciseReps,
+      id_client: id ? parseInt(id, 10) : 0 // Use 0 if no client ID
     };
 
-    let updatedExercises;
-    if (editingExerciseIndex !== null) {
-      updatedExercises = [...exercises];
-      updatedExercises[editingExerciseIndex] = newExercise;
+    if (exerciseId !== -1) {
+      // If editing an existing exercise, update it
+      exercise.id = exerciseId;
+      await updateExerciseLocal(exercise);
     } else {
-      updatedExercises = [...exercises, newExercise];
+      // If creating a new exercise, generate a new ID
+      exercise.id = Date.now();
+      await saveExerciseLocal(exercise);
     }
 
-    setExercises(updatedExercises);
-    setShowExerciseForm(false);
-    setEditingExerciseIndex(null);
+
+    setExercises(prev => {
+      const updated = [...prev];
+      if (editingExerciseIndex !== null) {
+        updated[editingExerciseIndex] = exercise; // Update existing exercise
+      } else {
+        updated.push(exercise); // Add new exercise
+      }
+      return updated;
+    }
+    );
+
+    clearExerciseForm();
   };
+
 
   const editExercise = (index: number) => {
     const ex = exercises[index];
     setExerciseName(ex.name);
-    setExerciseWeight(ex.weight);
-    setExerciseReps(ex.reps);
+    setExerciseWeight(ex.max_weight);
+    setExerciseReps(ex.max_reps);
+    setExerciseId(ex.id);
     setEditingExerciseIndex(index);
     setShowExerciseForm(true);
   };
 
-  const deleteExercise = (index: number) => {
+  const deleteExercise = async (index: number) => {
+    const exerciseToDelete = exercises[index];
+
+    await deleteExerciseLocal(exerciseToDelete);
     const updated = [...exercises];
     updated.splice(index, 1);
     setExercises(updated);
   };
 
-  const saveClient = async () => {
-    const clients = await getClients();
-    let updatedClients;
-
+  const submitClient = async () => {
     if (id) {
-      updatedClients = clients.map(c =>
-        c.id.toString() === id
-          ? { ...c, name, phone, exercises }
-          : c
-      );
-    } else {
-      const newClient: Client = {
-        id: Date.now(),
+      await updateClientLocal({
+        id: parseInt(id, 10),
         name,
-        phone,
-        exercises,
-      };
-      updatedClients = [...clients, newClient];
+        phone
+      });
+    } else {
+      await saveClientLocal({
+        id: Date.now(), // Generate a new ID for new clients
+        name,
+        phone
+      }
+      );
     }
-
-    await saveClients(updatedClients);
     setShowToast(true);
     setTimeout(() => history.push("/clients"), 1000);
   };
+
+  if (!formLoaded) {
+    return (
+      <IonPage>
+        <IonContent className="ion-padding">
+          <p>Cargando...</p>
+        </IonContent>
+      </IonPage>
+    );
+  }
+
 
   return (
     <IonPage>
       <IonHeader>
         <IonToolbar>
-          <IonTitle>{id ? "Editar Cliente" : "Nuevo Cliente"}</IonTitle>
+          <IonTitle>{id ? "Editando Cliente" : "Creando nuevo Cliente"}</IonTitle>
         </IonToolbar>
       </IonHeader>
       <IonContent className="ion-padding">
         <IonItem>
           <IonLabel position="stacked">Nombre</IonLabel>
-          <IonInput value={name} onIonChange={e => setName(e.detail.value!)} />
+          <IonInput
+            value={name}
+            onIonInput={(e) => setName(e.detail.value!)}
+          />
         </IonItem>
         <IonItem>
           <IonLabel position="stacked">Teléfono</IonLabel>
-          <IonInput value={phone} onIonChange={e => setPhone(e.detail.value!)} />
+          <IonInput
+            value={phone}
+            onIonInput={(e) => setPhone(e.detail.value!)}
+          />
         </IonItem>
 
-        <IonButton expand="block" onClick={startAddExercise} disabled={showExerciseForm}>
+        {id && (<IonButton expand="block" onClick={startAddExercise} disabled={showExerciseForm}>
           {editingExerciseIndex !== null ? "Editar Ejercicio" : "Añadir Ejercicio"}
-        </IonButton>
+        </IonButton>)}
+
 
         {showExerciseForm && (
           <>
             <IonItem>
               <IonLabel position="stacked">Ejercicio</IonLabel>
-              <IonInput value={exerciseName} onIonChange={e => setExerciseName(e.detail.value!)} />
+              <IonInput
+                value={exerciseName}
+                onIonInput={(e) => setExerciseName(e.detail.value!)}
+              />
             </IonItem>
             <IonItem>
               <IonLabel position="stacked">Peso (kg)</IonLabel>
-              <IonInput type="number" value={exerciseWeight} onIonChange={e => setExerciseWeight(parseInt(e.detail.value!, 10))} />
+              <IonInput
+                type="number"
+                value={exerciseWeight}
+                onIonInput={(e) => setExerciseWeight(parseInt(e.detail.value!))}
+              />
             </IonItem>
             <IonItem>
               <IonLabel position="stacked">Repeticiones</IonLabel>
-              <IonInput type="number" value={exerciseReps} onIonChange={e => setExerciseReps(parseInt(e.detail.value!, 10))} />
+              <IonInput
+                type="number"
+                value={exerciseReps}
+                onIonInput={(e) => setExerciseReps(parseInt(e.detail.value!))}
+              />
             </IonItem>
-            <IonButton expand="block" color="success" onClick={saveExercise}>Confirmar Ejercicio</IonButton>
+            <IonButton expand="block" color={exerciseId === -1 ? "success" : "warning"} onClick={submitExercise}>{exerciseId === -1 ? "Guardar ejercicio" : "Actualizar"}</IonButton>
+            <IonButton expand="block" color="danger" onClick={clearExerciseForm}>
+              Descartar
+            </IonButton>
           </>
         )}
 
@@ -164,9 +244,9 @@ const ClientForm: React.FC = () => {
           {exercises.map((ex, index) => (
             <IonItem key={index}>
               <IonLabel>
-                <strong>{ex.name}</strong> — {ex.weight} kg x {ex.reps} reps
+                <strong>{ex.name}</strong> — {ex.max_weight} kg x {ex.max_reps} reps
               </IonLabel>
-              <IonButton fill="clear" slot="end" onClick={() => editExercise(index)}>
+              <IonButton fill="clear" slot="end" color="warning" onClick={() => editExercise(index)}>
                 <IonIcon icon={pencilOutline} />
               </IonButton>
               <IonButton fill="clear" slot="end" color="danger" onClick={() => deleteExercise(index)}>
@@ -180,7 +260,7 @@ const ClientForm: React.FC = () => {
           <IonLabel>Total ejercicios: {exercises.length}</IonLabel>
         </IonItem>
 
-        <IonButton expand="block" color="primary" onClick={saveClient} disabled={!clientReady}>
+        <IonButton expand="block" color={id ? "warning" : "primary"} onClick={submitClient} disabled={!clientReady}>
           {id ? "Guardar Cambios" : "Crear Cliente"}
         </IonButton>
 

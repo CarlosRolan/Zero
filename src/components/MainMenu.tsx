@@ -14,7 +14,8 @@ import {
 import {
   homeOutline,
   addCircleOutline,
-  peopleOutline
+  peopleOutline,
+  shareOutline
 } from "ionicons/icons";
 
 const MainMenu: React.FC = () => (
@@ -42,6 +43,12 @@ const MainMenu: React.FC = () => (
           <IonItem routerLink="/clients" routerDirection="none">
             <IonIcon slot="start" icon={peopleOutline} />
             <IonLabel>Clientes</IonLabel>
+          </IonItem>
+        </IonMenuToggle>
+        <IonMenuToggle autoHide={false}>
+          <IonItem routerLink="/exports" routerDirection="none">
+            <IonIcon slot="start" icon={shareOutline} />
+            <IonLabel>Exportar</IonLabel>
           </IonItem>
         </IonMenuToggle>
       </IonList>

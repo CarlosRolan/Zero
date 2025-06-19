@@ -1,9 +1,63 @@
-.table-bordered .ion-col {
- border: 1px solid #ccc;
- padding: 8px;
+.table-bordered {
+  border: 1px solid #ccc;
+  border-collapse: collapse;
+    width: 100%;
 }
 
-.table-bordered .header-row {
- font-weight: bold;
- background-color: #f1f1f1;
+.excel-table ion-row,
+.sub-table ion-row {
+  border-bottom: 1px solid #ddd;
+}
+
+.excel-table ion-col,
+.sub-table ion-col {
+  border-right: 1px solid #ddd;
+  padding: 6px;
+  color: #000;
+  /* texto negro para buena visibilidad */
+}
+
+.excel-table ion-row:last-child,
+.sub-table ion-row:last-child {
+  border-bottom: none;
+}
+
+.excel-table ion-col:last-child,
+.sub-table ion-col:last-child {
+  border-right: none;
+}
+
+.header-row {
+  background: #e0f0ff;
+  /* azul claro */
+  font-weight: bold;
+  color: #000;
+    /* aseguramos texto oscuro y legible */
+  }
+  
+  .exercise-row {
+    background-color: #f9f9f9;
+  }
+  
+  .sub-table {
+    background-color: #ffffff;
+    border: 1px solid #b0c4de;
+    border-radius: 4px;
+    margin-top: 6px;
+  }
+  
+  .sub-table .header-row {
+    background-color: #d6eaff;
+    color: #000;
+    /* texto negro para el encabezado */
+  }
+  
+  .sub-table ion-col {
+    padding: 4px 8px;
+    color: #000;
+    /* texto negro */
+  }
+  
+  ion-button {
+    margin-inline: 4px;
 }

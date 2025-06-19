@@ -1,7 +1,6 @@
 import { IonApp, IonRouterOutlet, IonSplitPane, setupIonicReact } from '@ionic/react';
 import { IonReactRouter } from '@ionic/react-router';
 import { Redirect, Route } from 'react-router-dom';
-import Menu from './components/MainMenu';
 
 
 /* Core CSS required for Ionic components to work properly */
@@ -36,42 +35,25 @@ import './theme/variables.css';
 
 setupIonicReact();
 
-import {
-  IonContent,
-  IonHeader,
-  IonMenu,
-  IonTitle,
-  IonToolbar,
-  IonList,
-  IonItem,
-  IonMenuToggle,
-  IonLabel,
-  IonIcon,
-} from "@ionic/react";
-
-import {
-  homeOutline,
-  addCircleOutline,
-  peopleOutline
-} from "ionicons/icons";
 
 
 import Home from "./pages/Home";
 import ClientForm from "./pages/ClientForm";
 import ClientsList from "./pages/ClientsList";
 import MainMenu from './components/MainMenu';
+import ExportPage from './pages/ExportPage';
 
 const App: React.FC = () => (
   <IonApp>
     <IonReactRouter>
       <IonSplitPane contentId="main">
         <MainMenu></MainMenu>
-
         <IonRouterOutlet id="main">
           <Route exact path="/home" component={Home} />
           <Route exact path="/client-form" component={ClientForm} />
           <Route exact path="/client-form/:id" component={ClientForm} />
           <Route exact path="/clients" component={ClientsList} />
+          <Route exact path="/exports" component={ExportPage} />
           <Redirect exact from="/" to="/home" />
         </IonRouterOutlet>
       </IonSplitPane>

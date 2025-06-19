@@ -1,0 +1,18 @@
+.table-bordered {
+ border: 1px solid #ccc;
+}
+
+.table-bordered .header-row {
+ background-color: #e8f0fe;
+ font-weight: bold;
+}
+
+.table-bordered .ion-col {
+ border: 1px solid #ccc;
+ padding: 6px 8px;
+}
+
+.ion-margin-vertical {
+ margin-top: 16px;
+ margin-bottom: 16px;
+}
