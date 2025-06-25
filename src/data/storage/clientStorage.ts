@@ -1,5 +1,6 @@
 import { Client } from "../../types/client";
-import { CLIENTS_KEY } from "./local_keys";
+import { Exercise } from "../../types/exercise";
+import { CLIENTS_KEY, EXERCISES_KEY } from "./local_keys";
 import { getStorage, setStorage } from "./storage";
 
 export const getClientsLocal = async (): Promise<Client[]> => {
@@ -12,38 +13,37 @@ export const getClientsLocal = async (): Promise<Client[]> => {
  }
 }
 
-export const saveClientLocal = async (newClient: Client) => {
- try {
-  const isValid = await validateClient(newClient);
+export const saveClientLocal = async (newClient: Client): Promise<"ok" | "name" | "phone" | "both"> => {
+ const validation = await validateClient(newClient);
+ if (validation === "ok") {
   const oldClients = await getStorage(CLIENTS_KEY);
-  if (isValid) {
-   const newClients = [...oldClients, newClient];
-   setStorage(CLIENTS_KEY, newClients);
-  } else {
-   console.log("Cliente no añadido");
-  }
- } catch (error) {
-
+  const newClients = [...oldClients, newClient];
+  await setStorage(CLIENTS_KEY, newClients);
  }
-}
+ return validation;
+};
 
-export const deleteCientLocal = async (toDelete: Client) => {
+export const deleteClientLocal = async (idToDelete: number) => {
  try {
+  /* ---------- CLIENTES ---------- */
   const oldClients: Client[] = await getStorage(CLIENTS_KEY);
-  const exists = oldClients.find(iter => iter.id === toDelete.id);
-  if (exists) {
-   const newClients: Client[] = [...oldClients.filter(iter => iter.id !== toDelete.id)]
-   setStorage(CLIENTS_KEY, newClients);
-  } else {
-   console.log("No existe un usuario con ese id para poder borrarlo");
+  const newClients = oldClients.filter(c => c.id !== idToDelete);
+  await setStorage(CLIENTS_KEY, newClients);
 
-  }
- } catch (error) {
+  /* ---------- EJERCICIOS ---------- */
+  const allExercises: Exercise[] = await getStorage(EXERCISES_KEY);
+  const remainingExercises = allExercises.filter(
+   ex => ex.id_client !== idToDelete
+  );
+  await setStorage(EXERCISES_KEY, remainingExercises);
 
+ } catch (err) {
+  console.error("Error eliminando cliente:", err);
  }
-}
+};
 
 export const updateClientLocal = async (updatedClient: Client) => {
+
  try {
   const oldClients: Client[] = await getStorage(CLIENTS_KEY);
 
@@ -67,20 +67,14 @@ export const updateClientLocal = async (updatedClient: Client) => {
 
 
 
-const validateClient = async (client: Client): Promise<boolean> => {
+export const validateClient = async (client: Client): Promise<"ok" | "name" | "phone" | "both"> => {
  const clients: Client[] = await getStorage(CLIENTS_KEY);
 
  const nameExists = clients.some((iter) => iter.name === client.name);
- if (nameExists) {
-  console.log("cliente con el mismo NOMBRE");
-  return false;
- }
-
  const phoneExists = clients.some((iter) => iter.phone === client.phone);
- if (phoneExists) {
-  console.log("cliente con el mismo TELEFONO");
-  return false;
- }
 
- return true;
+ if (nameExists && phoneExists) return "both";
+ if (nameExists) return "name";
+ if (phoneExists) return "phone";
+ return "ok";
 };

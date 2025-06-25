@@ -23,12 +23,13 @@ const Home: React.FC = () => {
           <h2>Bienvenido a Zero Manager</h2>
           <p>Usa el menú lateral para gestionar tus clientes.</p>
         </IonText>
-        <IonButton onClick={clearData}>
-          clear
-        </IonButton>
+        {<IonButton onClick={clearData}>
+          Borrar todos los datos
+        </IonButton>}
       </IonContent>
     </IonPage>
   );
 };
 
 export default Home;
+

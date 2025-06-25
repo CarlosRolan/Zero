@@ -1,16 +1,52 @@
-import {
- IonPage, IonHeader, IonToolbar, IonTitle, IonContent,
- IonItem, IonLabel, IonSelect, IonSelectOption, IonButton, IonSearchbar, IonList
-} from "@ionic/react";
+/* eslint-disable @typescript-eslint/ban-ts-comment */
 import React, { useEffect, useState } from "react";
-import { Client } from "../types/client";
-import { getStorage } from "../data/storage/storage";
-import * as XLSX from "xlsx";
+import {
+ IonPage,
+ IonHeader,
+ IonToolbar,
+ IonTitle,
+ IonContent,
+ IonItem,
+ IonLabel,
+ IonSearchbar,
+ IonButton,
+ IonList,
+ useIonViewWillEnter
+} from "@ionic/react";
 import { Filesystem, Directory, Encoding } from "@capacitor/filesystem";
 import { Capacitor } from "@capacitor/core";
+
+import { Client } from "../types/client";
+import { Exercise } from "../types/exercise";
 import { getClientsLocal } from "../data/storage/clientStorage";
 import { getExercisesLocal } from "../data/storage/exerciseStorage";
-import { Exercise } from "../types/exercise";
+// const XLSX = require("xlsx-style");
+import * as XLSX from "xlsx";
+
+
+/* ────────────────────────────────────────────────
+   ESTILOS DE CELDA (sin tipos)
+────────────────────────────────────────────────── */
+const styleClientHeader = {
+ font: { bold: true, color: { rgb: "FFFFFF" } },
+ fill: { patternType: "solid", fgColor: { rgb: "003366" } },
+ alignment: { horizontal: "center", vertical: "center" }
+} as any;
+
+const styleExerciseHeader = {
+ font: { bold: true },
+ fill: { patternType: "solid", fgColor: { rgb: "DDDDDD" } },
+ alignment: { horizontal: "center", vertical: "center" }
+} as any;
+
+/* Helper para aplicar estilo a la fila 1 */
+const applyHeaderStyle = (sheet: any, numCols: number, style: any) => {
+ for (let c = 0; c < numCols; c++) {
+  const colLetter = String.fromCharCode(65 + c);
+  const cell = sheet[`${colLetter}1`];
+  if (cell) cell.s = style;
+ }
+};
 
 const ExportPage: React.FC = () => {
  const [allClients, setAllClients] = useState<Client[]>([]);
@@ -19,145 +55,286 @@ const ExportPage: React.FC = () => {
  const [searchText, setSearchText] = useState("");
  const [selectedClientId, setSelectedClientId] = useState<number | null>(null);
 
- useEffect(() => {
-
-  const getData = async () => {
-
+ /* ─── Carga inicial ─── */
+ useIonViewWillEnter(() => {
+  (async () => {
    try {
-    const data: Client[] = await getClientsLocal();
-    const exercisesData: Exercise[] = await getExercisesLocal();
-
-    setAllClients(data);
-    setFilteredClients(data);
-    setAllExercises(exercisesData)
-
-   } catch (error) {
-    console.error("Error al obtener los datos:", error);
+    const clients = await getClientsLocal();
+    const exercises = await getExercisesLocal();
+    setAllClients(clients);
+    setFilteredClients(clients);
+    setAllExercises(exercises);
+   } catch (err) {
+    console.error("Error al obtener datos:", err);
    }
-  }
-
+  })();
  }, []);
 
- const handleSearch = (text: string) => {
-  setSearchText(text);
+ /* ─── Buscador ─── */
+ const handleSearch = (txt: string) => {
+  setSearchText(txt);
   setFilteredClients(
-   allClients.filter(c =>
-    c.name.toLowerCase().includes(text.toLowerCase()) ||
-    c.phone.includes(text)
+   allClients.filter(
+    (c) =>
+     c.name.toLowerCase().includes(txt.toLowerCase()) ||
+     c.phone.includes(txt)
    )
   );
  };
 
- const exportToExcel = async (data: any[], filename: string) => {
-  const worksheet = XLSX.utils.json_to_sheet(data);
-  const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, worksheet, "Clientes");
-
-  const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
+ /* ─── Guardar libro Excel ─── */
+ const saveWorkbook = async (workbook: any, filename: string) => {
+  const buf = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
 
   if (Capacitor.isNativePlatform()) {
-   const blob = new Blob([excelBuffer], { type: "application/octet-stream" });
+   const blob = new Blob([buf], { type: "application/octet-stream" });
    const reader = new FileReader();
-
    reader.onload = async () => {
     const base64 = (reader.result as string).split(",")[1];
     await Filesystem.writeFile({
      path: `${filename}.xlsx`,
      data: base64,
      directory: Directory.Documents,
-     encoding: Encoding.UTF8,
+     encoding: Encoding.UTF8
     });
     alert(`Archivo guardado como ${filename}.xlsx`);
    };
-
    reader.readAsDataURL(blob);
   } else {
-   const blob = new Blob([excelBuffer], { type: "application/octet-stream" });
+   const blob = new Blob([buf], { type: "application/octet-stream" });
    const link = document.createElement("a");
-   link.href = window.URL.createObjectURL(blob);
+   link.href = URL.createObjectURL(blob);
    link.download = `${filename}.xlsx`;
    link.click();
   }
  };
 
+ /* ────────────────────────────────────────────────
+    EXPORTAR TODOS
+ ────────────────────────────────────────────────── */
  const exportAllClients = () => {
-  const clientSheet = allClients.map(client => ({
-   ID: client.id,
-   Nombre: client.name,
-   Teléfono: client.phone,
+  /* Sheet 1: Clientes */
+  const clientSheetData = allClients.map((cl) => ({
+   Nombre: cl.name,
+   Teléfono: cl.phone,
+   Ejercicios: allExercises
+    .filter((ex) => ex.id_client === cl.id)
+    .map((ex) => ex.name)
+    .join(", ") || "Sin ejercicios"
   }));
 
-  const exerciseSheet = allClients.flatMap(client =>
-   allExercises.map(ex => ({
-    ClienteID: client.id,
-    Cliente: client.name,
+  /* Sheet 2: Ejercicios */
+  const exerciseSheetData = allExercises.map((ex) => {
+   const cl = allClients.find((c) => c.id === ex.id_client);
+   return {
+    Cliente: cl ? cl.name : "Desconocido",
+    Teléfono: cl ? cl.phone : "—",
     Ejercicio: ex.name,
     Peso: ex.max_weight,
     Reps: ex.max_reps
-   }))
-  );
-
-  const workbook = XLSX.utils.book_new();
-
-  const clientWorksheet = XLSX.utils.json_to_sheet(clientSheet);
-  const exerciseWorksheet = XLSX.utils.json_to_sheet(exerciseSheet);
-
-  XLSX.utils.book_append_sheet(workbook, clientWorksheet, "Clientes");
-  XLSX.utils.book_append_sheet(workbook, exerciseWorksheet, "Ejercicios");
-
-  const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
-
-  if (Capacitor.isNativePlatform()) {
-   const blob = new Blob([excelBuffer], { type: "application/octet-stream" });
-   const reader = new FileReader();
-
-   reader.onload = async () => {
-    const base64 = (reader.result as string).split(",")[1];
-    await Filesystem.writeFile({
-     path: "clientes_y_ejercicios.xlsx",
-     data: base64,
-     directory: Directory.Documents,
-     encoding: Encoding.UTF8,
-    });
-    alert("Archivo guardado correctamente");
    };
+  });
 
-   reader.readAsDataURL(blob);
-  } else {
-   const blob = new Blob([excelBuffer], { type: "application/octet-stream" });
-   const link = document.createElement("a");
-   link.href = window.URL.createObjectURL(blob);
-   link.download = "clientes_y_ejercicios.xlsx";
-   link.click();
-  }
+  /* Sheet 3: Progreso (vacío) */
+  const progressHeaders = [
+   { Cliente: "", Ejercicio: "", Mes: "", Peso: "", Reps: "" }
+  ];
+
+  /* Sheet 4: Resumen (cliente + ejercicios tabulados) */
+  const resumenSheet = XLSX.utils.aoa_to_sheet([]);
+  let row = 0;
+
+  allClients.forEach((cl) => {
+   /* Header Cliente */
+   XLSX.utils.sheet_add_aoa(resumenSheet, [["Cliente", "Teléfono"]], {
+    origin: { r: row, c: 0 }
+   });
+   resumenSheet[`A${row + 1}`].s = styleClientHeader;
+   resumenSheet[`B${row + 1}`].s = styleClientHeader;
+   row++;
+
+   /* Datos cliente */
+   XLSX.utils.sheet_add_aoa(resumenSheet, [[cl.name, cl.phone]], {
+    origin: { r: row, c: 0 }
+   });
+   row++;
+
+   /* Fila vacía */
+   row++;
+
+   /* Header Ejercicios */
+   XLSX.utils.sheet_add_aoa(
+    resumenSheet,
+    [["", "Ejercicio", "Peso", "Reps"]],
+    { origin: { r: row, c: 0 } }
+   );
+   ["B", "C", "D"].forEach((col) => {
+    resumenSheet[`${col}${row + 1}`].s = styleExerciseHeader;
+   });
+   row++;
+
+   /* Ejercicios del cliente */
+   const exs = allExercises.filter((ex) => ex.id_client === cl.id);
+   if (exs.length) {
+    exs.forEach((ex) => {
+     XLSX.utils.sheet_add_aoa(
+      resumenSheet,
+      [["", ex.name, ex.max_weight, ex.max_reps]],
+      { origin: { r: row, c: 0 } }
+     );
+     row++;
+    });
+   } else {
+    XLSX.utils.sheet_add_aoa(
+     resumenSheet,
+     [["", "Sin ejercicios", "-", "-"]],
+     { origin: { r: row, c: 0 } }
+    );
+    row++;
+   }
+
+   /* Separación entre clientes */
+   row++;
+  });
+
+  /* Construir libro */
+  const wb = XLSX.utils.book_new();
+
+  const wsClients = XLSX.utils.json_to_sheet(clientSheetData);
+  applyHeaderStyle(wsClients, 3, styleClientHeader);
+  XLSX.utils.book_append_sheet(wb, wsClients, "Clientes");
+
+  const wsExercises = XLSX.utils.json_to_sheet(exerciseSheetData);
+  applyHeaderStyle(wsExercises, 5, styleExerciseHeader);
+  XLSX.utils.book_append_sheet(wb, wsExercises, "Ejercicios");
+
+  const wsProgress = XLSX.utils.json_to_sheet(progressHeaders);
+  applyHeaderStyle(wsProgress, 5, styleExerciseHeader);
+  XLSX.utils.book_append_sheet(wb, wsProgress, "Progreso");
+
+  XLSX.utils.book_append_sheet(wb, resumenSheet, "Resumen");
+
+  /* Guardar */
+  saveWorkbook(wb, "clientes_ejercicios_progreso");
  };
 
-
+ /* ────────────────────────────────────────────────
+    EXPORTAR UN SOLO CLIENTE
+ ────────────────────────────────────────────────── */
+ /* ────────────────────────────────────────────────
+    EXPORTAR UN SOLO CLIENTE
+ ────────────────────────────────────────────────── */
  const exportSingleClient = () => {
-  const client = allClients.find(c => c.id === selectedClientId);
-  if (!client) return;
+  const cl = allClients.find((c) => c.id === selectedClientId);
+  if (!cl) return;
 
-  const exercisesForClient = allExercises.filter(ex => ex.id_client === client.id);
+  /* ---------- Hoja 1: Clientes (solo uno) ---------- */
+  const clientSheetData = [
+   {
+    Nombre: cl.name,
+    Teléfono: cl.phone,
+    Ejercicios: allExercises
+     .filter((ex) => ex.id_client === cl.id)
+     .map((ex) => ex.name)
+     .join(", ") || "Sin ejercicios"
+   }
+  ];
 
-  const data = exercisesForClient
-   ? exercisesForClient.map(ex => ({
-    Cliente: client.name,
-    Teléfono: client.phone,
+  /* ---------- Hoja 2: Ejercicios (del cliente) ---------- */
+  const exerciseSheetData = allExercises
+   .filter((ex) => ex.id_client === cl.id)
+   .map((ex) => ({
+    Cliente: cl.name,
+    Teléfono: cl.phone,
     Ejercicio: ex.name,
     Peso: ex.max_weight,
     Reps: ex.max_reps
-   }))
-   : [{
-    Cliente: client.name,
-    Teléfono: client.phone,
-    Ejercicio: "Sin ejercicios",
-    Peso: "-",
-    Reps: "-"
-   }];
+   }));
 
-  exportToExcel(data, `cliente_${client.name}`);
+  /* ---------- Hoja 3: Progreso (vacía) ---------- */
+  const progressHeaders = [
+   { Cliente: "", Ejercicio: "", Mes: "", Peso: "", Reps: "" }
+  ];
+
+  /* ---------- Hoja 4: Resumen (cliente + ejercicios) ---------- */
+  const resumenSheet = XLSX.utils.aoa_to_sheet([]);
+  let row = 0;
+
+  // Header Cliente
+  XLSX.utils.sheet_add_aoa(resumenSheet, [["Cliente", "Teléfono"]], {
+   origin: { r: row, c: 0 }
+  });
+  resumenSheet[`A${row + 1}`].s = styleClientHeader;
+  resumenSheet[`B${row + 1}`].s = styleClientHeader;
+  row++;
+
+  // Datos cliente
+  XLSX.utils.sheet_add_aoa(resumenSheet, [[cl.name, cl.phone]], {
+   origin: { r: row, c: 0 }
+  });
+  row++;
+
+  // Fila vacía
+  row++;
+
+  // Header Ejercicios
+  XLSX.utils.sheet_add_aoa(
+   resumenSheet,
+   [["", "Ejercicio", "Peso", "Reps"]],
+   { origin: { r: row, c: 0 } }
+  );
+  ["B", "C", "D"].forEach((col) => {
+   resumenSheet[`${col}${row + 1}`].s = styleExerciseHeader;
+  });
+  row++;
+
+  // Ejercicios del cliente
+  const exs = allExercises.filter((ex) => ex.id_client === cl.id);
+  if (exs.length) {
+   exs.forEach((ex) => {
+    XLSX.utils.sheet_add_aoa(
+     resumenSheet,
+     [["", ex.name, ex.max_weight, ex.max_reps]],
+     { origin: { r: row, c: 0 } }
+    );
+    row++;
+   });
+  } else {
+   XLSX.utils.sheet_add_aoa(
+    resumenSheet,
+    [["", "Sin ejercicios", "-", "-"]],
+    { origin: { r: row, c: 0 } }
+   );
+  }
+
+  /* ---------- Construir y guardar libro ---------- */
+  const wb = XLSX.utils.book_new();
+
+  // Clientes
+  const wsClient = XLSX.utils.json_to_sheet(clientSheetData);
+  applyHeaderStyle(wsClient, 3, styleClientHeader);
+  XLSX.utils.book_append_sheet(wb, wsClient, "Clientes");
+
+  // Ejercicios
+  const wsExercises = XLSX.utils.json_to_sheet(exerciseSheetData);
+  applyHeaderStyle(wsExercises, 5, styleExerciseHeader);
+  XLSX.utils.book_append_sheet(wb, wsExercises, "Ejercicios");
+
+  // Progreso
+  const wsProgress = XLSX.utils.json_to_sheet(progressHeaders);
+  applyHeaderStyle(wsProgress, 5, styleExerciseHeader);
+  XLSX.utils.book_append_sheet(wb, wsProgress, "Progreso");
+
+  // Resumen
+  XLSX.utils.book_append_sheet(wb, resumenSheet, "Resumen");
+
+  saveWorkbook(wb, `cliente_${cl.name}`);
  };
 
+
+ /* ────────────────────────────────────────────────
+    UI
+ ────────────────────────────────────────────────── */
  return (
   <IonPage>
    <IonHeader>
@@ -165,6 +342,7 @@ const ExportPage: React.FC = () => {
      <IonTitle>Exportar Clientes</IonTitle>
     </IonToolbar>
    </IonHeader>
+
    <IonContent className="ion-padding">
     <IonButton expand="block" color="success" onClick={exportAllClients}>
      Exportar Todos a Excel
@@ -175,19 +353,21 @@ const ExportPage: React.FC = () => {
     </IonItem>
     <IonSearchbar
      value={searchText}
-     onIonInput={e => handleSearch(e.detail.value!)}
+     onIonInput={(e) => handleSearch(e.detail.value!)}
      placeholder="Nombre o teléfono"
     />
 
     <IonList>
-     {filteredClients.map(client => (
+     {filteredClients.map((cl) => (
       <IonItem
-       key={client.id}
+       key={cl.id}
        button
-       onClick={() => setSelectedClientId(client.id)}
-       color={selectedClientId === client.id ? "light" : ""}
+       onClick={() => setSelectedClientId(cl.id)}
+       color={selectedClientId === cl.id ? "light" : ""}
       >
-       <IonLabel>{client.name} ({client.phone})</IonLabel>
+       <IonLabel>
+        {cl.name} ({cl.phone})
+       </IonLabel>
       </IonItem>
      ))}
     </IonList>

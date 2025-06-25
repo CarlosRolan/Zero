@@ -68,15 +68,22 @@ export const updateExerciseLocal = async (updated: Exercise) => {
  }
 }
 
-const validateExercise = async (toValidate: Exercise) => {
- const data: Exercise[] = await getStorage(EXERCISES_KEY);
+export const validateExercise = async (client: Exercise): Promise<"ok" | "name" | "peso" | "reps"> => {
+ const clients: Exercise[] = await getStorage(EXERCISES_KEY);
 
- data.forEach((iter: Exercise) => {
-  if (iter.name === toValidate.name && iter.id !== toValidate.id) {
-   console.log("ejercicio con el mismo NOMBRE(es decir mes) para el mismo cliente");
-   return false;
-  }
- });
+ const nameExists = clients.some((iter) => iter.name === client.name);
 
- return true;
-}
+ if (client.max_weight <= 0) {
+  console.error("El peso máximo debe ser mayor que 0");
+  return "peso";
+ }
+
+ if (client.max_reps <= 0) {
+  console.error("El número máximo de repeticiones debe ser mayor que 0");
+  return "reps";
+ }
+
+ if (nameExists) return "name";
+
+ return "ok";
+};

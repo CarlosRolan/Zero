@@ -42,6 +42,8 @@ import ClientForm from "./pages/ClientForm";
 import ClientsList from "./pages/ClientsList";
 import MainMenu from './components/MainMenu';
 import ExportPage from './pages/ExportPage';
+import ExerciseForm from './components/ExerciseForm';
+import ExercisePage from './pages/ExercisePage';
 
 const App: React.FC = () => (
   <IonApp>
@@ -54,6 +56,8 @@ const App: React.FC = () => (
           <Route exact path="/client-form/:id" component={ClientForm} />
           <Route exact path="/clients" component={ClientsList} />
           <Route exact path="/exports" component={ExportPage} />
+          <Route exact path="/exercise-form" component={ExercisePage} />
+          <Route exact path="/exercise-form/:id" component={ExercisePage} />
           <Redirect exact from="/" to="/home" />
         </IonRouterOutlet>
       </IonSplitPane>
