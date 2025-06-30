@@ -3,7 +3,6 @@ import {
   IonButton,
   IonIcon
 } from "@ionic/react";
-import { trashOutline } from "ionicons/icons";
 import React from "react";
 
 const Home: React.FC = () => {
@@ -21,11 +20,11 @@ const Home: React.FC = () => {
       <IonContent className="ion-padding">
         <IonText>
           <h2>Bienvenido a Zero Manager</h2>
-          <p>Usa el menú lateral para gestionar tus clientes.</p>
+          <p>Usa el menú lateral para gestionar tus clientes</p>
         </IonText>
-        {<IonButton onClick={clearData}>
+        <IonButton onClick={clearData}>
           Borrar todos los datos
-        </IonButton>}
+        </IonButton>
       </IonContent>
     </IonPage>
   );

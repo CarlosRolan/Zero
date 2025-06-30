@@ -1,16 +1,10 @@
-// ExercisePage.tsx
 import {
- IonPage, IonHeader, IonToolbar, IonTitle, IonContent,
- IonSelect,
- useIonViewWillEnter
+ IonPage, IonHeader, IonToolbar, IonTitle, IonContent
 } from "@ionic/react";
-import { useParams } from "react-router-dom";
-import React, { useEffect } from "react";
-import ExerciseForm from "../components/ExerciseForm";
-import { getClientsLocal } from "../data/storage/clientStorage";
+import React from "react";
+import ExerciseForm from "../components/exercise/ExerciseForm";
 
 const ExercisePage: React.FC = () => {
-
 
  return (
   <IonPage>
@@ -20,7 +14,6 @@ const ExercisePage: React.FC = () => {
     </IonToolbar>
    </IonHeader>
    <IonContent className="ion-padding">
-
     <ExerciseForm />
    </IonContent>
   </IonPage>

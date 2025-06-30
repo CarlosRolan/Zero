@@ -6,10 +6,7 @@ import {
 import React, { useEffect, useRef, useState } from "react";
 import { useParams, useHistory } from "react-router-dom";
 import { Client } from "../types/client";
-import { Exercise } from "../types/exercise";
 import { deleteClientLocal, getClientsLocal, saveClientLocal, updateClientLocal } from "../data/storage/clientStorage";
-import { getExercisesLocal } from "../data/storage/exerciseStorage";
-import ExerciseForm from "../components/ExerciseForm";
 
 const ClientForm: React.FC = () => {
   const { id } = useParams<{ id?: string }>();

@@ -61,3 +61,17 @@
   ion-button {
     margin-inline: 4px;
 }
+/* Suave separación entre items */
+.exercise-list ion-item {
+  --inner-padding-end: 0;
+  /* quita padding derecho para que quede alineado */
+  --inner-padding-start: 0;
+  /* idem izquierdo                 */
+  --padding-start: 0;
+}
+
+/* Título un poco más grande y grueso */
+.exercise-title {
+  font-size: 1rem;
+  font-weight: 600;
+}

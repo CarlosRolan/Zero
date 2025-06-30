@@ -4,16 +4,16 @@ import {
 } from "@ionic/react";
 import { trashOutline, pencilOutline } from "ionicons/icons";
 import React, { useEffect, useRef, useState } from "react";
-import { Exercise } from "../types/exercise";
-import { Client } from "../types/client";
+import { Exercise } from "../../types/exercise";
+import { Client } from "../../types/client";
 import {
   deleteExerciseLocal,
   getExercisesLocal,
   saveExerciseLocal,
   updateExerciseLocal,
   validateExercise
-} from "../data/storage/exerciseStorage";
-import { getClientsLocal } from "../data/storage/clientStorage";
+} from "../../data/storage/exerciseStorage";
+import { getClientsLocal } from "../../data/storage/clientStorage";
 import { useHistory, useParams } from "react-router";
 
 interface ExerciseFormProps {

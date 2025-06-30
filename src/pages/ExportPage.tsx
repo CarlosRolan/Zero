@@ -1,5 +1,4 @@
-/* eslint-disable @typescript-eslint/ban-ts-comment */
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import {
  IonPage,
  IonHeader,
@@ -22,7 +21,6 @@ import { getClientsLocal } from "../data/storage/clientStorage";
 import { getExercisesLocal } from "../data/storage/exerciseStorage";
 // const XLSX = require("xlsx-style");
 import * as XLSX from "xlsx";
-
 
 /* ────────────────────────────────────────────────
    ESTILOS DE CELDA (sin tipos)

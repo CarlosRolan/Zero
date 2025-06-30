@@ -1,9 +1,8 @@
 import {
   IonPage, IonHeader, IonToolbar, IonTitle, IonContent,
-  IonGrid, IonRow, IonCol, IonButton, IonIcon, IonAlert, IonCard, IonCardHeader, IonCardContent,
+  IonGrid, IonRow, IonCol, IonButton, IonIcon, IonAlert, 
   useIonViewWillEnter,
   IonText,
-  IonInput,
   IonSearchbar,
   IonToast,
   IonSpinner,
@@ -13,8 +12,8 @@ import {
   IonItem,
   IonLabel
 } from "@ionic/react";
-import { pencilOutline, trashOutline, chevronDownOutline, chevronUpOutline, add, logoWhatsapp } from "ionicons/icons";
-import React, { useState, useEffect, use } from "react";
+import { pencilOutline, trashOutline, chevronDownOutline, chevronUpOutline, add } from "ionicons/icons";
+import React, { useState } from "react";
 import { Client } from "../types/client";
 
 import { useHistory } from "react-router-dom";
@@ -22,23 +21,22 @@ import "./ClientsList.css";
 import { deleteClientLocal, getClientsLocal } from "../data/storage/clientStorage";
 import { getExercisesLocal } from "../data/storage/exerciseStorage";
 import { Exercise } from "../types/exercise";
-import { Share } from "@capacitor/share";
-import { Filesystem, Directory } from "@capacitor/filesystem";
-import { Capacitor } from "@capacitor/core";
-import { Icon } from "ionicons/dist/types/components/icon/icon";
+import { ExerciseTable } from "../components/exercise/ExerciseTable";
 
 const ClientsList: React.FC = () => {
+
   const [clients, setClients] = useState<Client[]>([]);
+  const [clientExercises, setClientExercises] = useState<Exercise[]>([]);
+
   const [expandedClientId, setExpandedClientId] = useState<number | null>(null);
   const [clientToDelete, setClientToDelete] = useState<Client | null>(null);
   const [showAlert, setShowAlert] = useState(false);
   const [viewMode, setViewMode] = useState<"table" | "cards">("table");
-  const [clientExercises, setClientExercises] = useState<Exercise[]>([]);
+
   const [searchTerm, setSearchTerm] = useState("");
 
   const [wppAlert, setWppAlert] = useState(false);
   const [loading, setLoading] = useState(true);
-
 
   const history = useHistory();
 
@@ -152,8 +150,6 @@ const ClientsList: React.FC = () => {
       </IonHeader>
       <IonContent className="ion-padding">
 
-
-
         <IonGrid>
           <IonRow className="ion-align-items-center ion-justify-content-between">
             <IonCol size="12" size-md="6">
@@ -245,25 +241,7 @@ const ClientsList: React.FC = () => {
                       </IonRow>
                       {expandedClientId === client.id && (
                         clientExercises.length > 0 ? (
-                          <IonRow className="exercise-wrapper-row">
-                            <IonCol col-span="12" className="no-padding">
-                              <IonGrid className="table-bordered exercises-subtable">
-                                <IonRow className="header-row exercises-header">
-                                  <IonCol>Ejercicio</IonCol>
-                                  <IonCol>Peso (kg)</IonCol>
-                                  <IonCol>Reps</IonCol>
-                                </IonRow>
-
-                                {clientExercises.map((ex, i) => (
-                                  <IonRow key={i}>
-                                    <IonCol>{ex.name}</IonCol>
-                                    <IonCol>{ex.max_weight}</IonCol>
-                                    <IonCol>{ex.max_reps}</IonCol>
-                                  </IonRow>
-                                ))}
-                              </IonGrid>
-                            </IonCol>
-                          </IonRow>
+                              <ExerciseTable exercises={clientExercises} />
                         ) : (
                           <IonRow className="exercise-wrapper-row">
                             <IonCol col-span="12" className="text-center no-padding">
@@ -311,20 +289,7 @@ const ClientsList: React.FC = () => {
                                     <em>Sin ejercicios aún.</em>
                                   </IonText>
                                 ) : (
-                                  <IonGrid className="table-bordered exercises-subtable" style={{ fontSize: "0.9rem" }}>
-                                    <IonRow className="header-row exercises-header">
-                                      <IonCol><strong>Ejercicio</strong></IonCol>
-                                      <IonCol><strong>Peso (kg)</strong></IonCol>
-                                      <IonCol><strong>Reps</strong></IonCol>
-                                    </IonRow>
-                                      {exs.map((ex, i) => (
-                                  <IonRow key={i}>
-                                    <IonCol>{ex.name}</IonCol>
-                                    <IonCol>{ex.max_weight}</IonCol>
-                                    <IonCol>{ex.max_reps}</IonCol>
-                                  </IonRow>
-                                ))}
-                                    </IonGrid>
+                                    <ExerciseTable exercises={exs} />
                                 )}
                               </div>
                             </IonAccordion>

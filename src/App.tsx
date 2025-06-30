@@ -42,7 +42,7 @@ import ClientForm from "./pages/ClientForm";
 import ClientsList from "./pages/ClientsList";
 import MainMenu from './components/MainMenu';
 import ExportPage from './pages/ExportPage';
-import ExerciseForm from './components/ExerciseForm';
+import ExerciseForm from './components/exercise/ExerciseForm';
 import ExercisePage from './pages/ExercisePage';
 
 const App: React.FC = () => (
