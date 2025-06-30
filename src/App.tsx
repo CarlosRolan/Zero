@@ -39,7 +39,7 @@ setupIonicReact();
 
 import Home from "./pages/Home";
 import ClientForm from "./pages/ClientForm";
-import ClientsList from "./pages/ClientsList";
+import ClientsList from "./pages/ClientsPage";
 import MainMenu from './components/MainMenu';
 import ExportPage from './pages/ExportPage';
 import ExerciseForm from './components/exercise/ExerciseForm';

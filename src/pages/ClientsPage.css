@@ -1,0 +1,70 @@
+/* Estilo de tablas principales (vista desktop) */
+.table-bordered {
+  border: 1px solid #ccc;
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.table-bordered ion-row,
+.sub-table ion-row {
+  border-bottom: 1px solid #ddd;
+}
+
+.table-bordered ion-col,
+.sub-table ion-col {
+  border-right: 1px solid #ddd;
+  padding: 6px;
+  color: #000;
+  /* texto negro para buena visibilidad */
+}
+
+.table-bordered ion-row:last-child,
+.sub-table ion-row:last-child {
+  border-bottom: none;
+}
+
+.table-bordered ion-col:last-child,
+.sub-table ion-col:last-child {
+  border-right: none;
+}
+
+/* Fila de cabecera */
+.header-row {
+  background: #e0f0ff;
+  font-weight: bold;
+  color: #000;
+}
+/* Tabla de ejercicios (sub-table) */
+.sub-table {
+  background-color: #ffffff;
+  border: 1px solid #b0c4de;
+  border-radius: 4px;
+  margin-top: 6px;
+}
+
+.sub-table .header-row {
+  background-color: #d6eaff;
+  color: #000;
+}
+
+.sub-table ion-col {
+  padding: 4px 8px;
+  color: #000;
+}
+/* Botones con separación horizontal */
+ion-button {
+  margin-inline: 4px;
+}
+/* -----------------------------
+   Vista móvil: lista de ejercicios
+------------------------------ */
+.exercise-list ion-item {
+  --inner-padding-end: 0;
+  --inner-padding-start: 0;
+  --padding-start: 0;
+}
+
+.exercise-title {
+  font-size: 1rem;
+  font-weight: 600;
+}
