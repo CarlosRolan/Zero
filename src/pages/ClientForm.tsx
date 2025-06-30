@@ -34,6 +34,7 @@ const ClientForm: React.FC = () => {
 
       if (id) {
         await loadClient();
+        console.log("Cargando cliente con ID:", id);
         setClientId(parseInt(id, 10));
       } else {
         setName("");
@@ -44,7 +45,7 @@ const ClientForm: React.FC = () => {
     };
 
     initForm(); // Llamada a la función async
-  });
+  }, [id]);
 
   useEffect(() => {
     if (id) {

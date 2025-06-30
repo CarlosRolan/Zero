@@ -14,14 +14,15 @@ import {
   validateExercise
 } from "../data/storage/exerciseStorage";
 import { getClientsLocal } from "../data/storage/clientStorage";
-import { useHistory } from "react-router";
+import { useHistory, useParams } from "react-router";
 
 interface ExerciseFormProps {
-  clientId: number;
+  clientId?: number;
 }
 
-const ExerciseForm: React.FC<ExerciseFormProps> = ({ clientId: initialClientId }) => {
+const ExerciseForm: React.FC<ExerciseFormProps> = () => {
   const inputRef = useRef<HTMLIonInputElement>(null);
+  const { id } = useParams<{ id?: string }>();
 
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [exerciseName, setExerciseName] = useState("");
@@ -35,13 +36,14 @@ const ExerciseForm: React.FC<ExerciseFormProps> = ({ clientId: initialClientId }
   const [nameError, setNameError] = useState(false);
 
   const [availableClients, setAvailableClients] = useState<Client[]>([]);
-  const [clientId, setClientId] = useState(initialClientId);
+  const [clientId, setClientId] = useState(-1);
 
   const [noClients, setNoClients] = useState(false);
 
   const history = useHistory();
 
   useIonViewWillEnter(() => {
+    console.log("EN COMPONETE", id);
     const loadClients = async () => {
       const clients = await getClientsLocal();
       if (clients.length === 0) {
@@ -53,22 +55,21 @@ const ExerciseForm: React.FC<ExerciseFormProps> = ({ clientId: initialClientId }
     };
 
     loadClients();
-    setClientId(initialClientId);
-    if (initialClientId !== -1 && initialClientId !== -2) {
-      loadExercisesByClientId(initialClientId);
-    } else {
-      setExercises([]);
-    }
-  });
 
-  useEffect(() => {
-    setClientId(initialClientId);
-    if (initialClientId !== -1 && initialClientId !== -2) {
-      loadExercisesByClientId(initialClientId);
-    } else {
-      setExercises([]);
+    if (id) {
+      const parsed = parseInt(id, 10);
+      console.log("PARSED ID", parsed);
+      setClientId(parsed);
+      if (parsed !== -1 && parsed !== -2) {
+        loadExercisesByClientId(parsed);
+      } else {
+        setExercises([]);
+      }
     }
-  }, [initialClientId]);
+
+
+  }, [id]);
+
 
   const loadExercisesByClientId = async (clientId: number) => {
     const allExercises = await getExercisesLocal();

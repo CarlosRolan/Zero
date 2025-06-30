@@ -6,7 +6,12 @@ import {
   IonInput,
   IonSearchbar,
   IonToast,
-  IonSpinner
+  IonSpinner,
+  IonAccordionGroup,
+  IonAccordion,
+  IonButtons,
+  IonItem,
+  IonLabel
 } from "@ionic/react";
 import { pencilOutline, trashOutline, chevronDownOutline, chevronUpOutline, add, logoWhatsapp } from "ionicons/icons";
 import React, { useState, useEffect, use } from "react";
@@ -46,12 +51,12 @@ const ClientsList: React.FC = () => {
     };
 
     rechargeClients();
-  });
+  }, []);
 
-  const shareExercises = async (client: Client) => {
+  /* const shareExercises = async (client: Client) => {
 
     const exercises = await loadExercisesByClientId(client.id)
-    /* 1. Construye el texto */
+
     const message =
       exercises.length
         ? `Hola ${client.name}, estos son tus ejercicios:\n\n` +
@@ -62,25 +67,24 @@ const ClientsList: React.FC = () => {
           .join("\n")
         : `Hola ${client.name}, aún no tienes ejercicios asignados.`;
 
-    /* 2A. Opción rápida: compartir texto plano */
+
     try {
       await Share.share({
         title: `Ejercicios de ${client.name}`,
         text: message,
         dialogTitle: "Compartir ejercicios…"
       });
-      return;                                  // ← listo
+      return;                                 
     } catch {
-    /* caeremos a la opción 2B si el share de texto no está soportado (p. ej. desktop) */
+
     }
 
-    /* 2B. (fallback) Genera un .txt y lo comparte */
     if (Capacitor.isNativePlatform()) {
       const fileName = `ejercicios_${client.name}.txt`;
       await Filesystem.writeFile({
         path: fileName,
         data: message,
-        directory: Directory.Cache      // tmp; se borra cuando la app se limpia
+        directory: Directory.Cache      
       });
 
       const uri = await Filesystem.getUri({
@@ -90,15 +94,15 @@ const ClientsList: React.FC = () => {
 
       await Share.share({
         title: `Ejercicios de ${client.name}`,
-        url: uri.uri,                  // adjunta el archivo
+        url: uri.uri,                
         dialogTitle: "Compartir ejercicios…"
       });
     } else {
-      /* último fallback: copiar al portapapeles o alertar */
+ 
       navigator.clipboard.writeText(message);
       alert("Texto copiado al portapapeles (el navegador no soporta compartir archivos).");
     }
-  };
+  }; */
 
   const loadClients = async () => {
     const data = await getClientsLocal();
@@ -123,7 +127,6 @@ const ClientsList: React.FC = () => {
   };
 
   const addExerciseToCLient = (clientId: number) => {
-    console.log("Añadir ejercicio al cliente", clientId);
     history.push(`/exercise-form/${clientId}`);
   };
 
@@ -188,8 +191,12 @@ const ClientsList: React.FC = () => {
               // Si no hay clientes, mostrar mensaje
                 <>
                   <IonText className="ion-padding-top ion-padding-bottom">
-                    <p>Para añadir un nuevo cliente, pulsa el botón de "Añadir Cliente"</p>
+                    <p>No hay ningun cliente, nada que listar</p>
+                    <p>Para añadir un nuevo cliente, pulsa el botón de "Crear cliente"</p>
                   </IonText>
+                  <IonButton expand="block" color="primary" onClick={() => history.push("/client-form/")}>
+                    Crear cliente
+                  </IonButton>
                 </>
 
 
@@ -203,6 +210,7 @@ const ClientsList: React.FC = () => {
                         <IonCol>Nombre</IonCol>
                         <IonCol>Teléfono</IonCol>
                         <IonCol>Ejercicios</IonCol>
+                        <IonCol>Acciones</IonCol>
                       </IonRow>
                       {filteredClients.map(client => (
                         <React.Fragment key={client.id}>
@@ -217,15 +225,15 @@ const ClientsList: React.FC = () => {
                                 <IonIcon icon={expandedClientId === client.id ? chevronUpOutline : chevronDownOutline} />
                               </IonButton>
                             </IonCol>
-                            <IonCol className="ion-text-right">
-                              <IonButton
-                                size="small"
-                                color="success"
+                            <IonCol>
+                              {/*  <IonButton
+                            size="small"
+                            color="success"
                             onClick={() => shareExercises(client)}
                           >
 
                             <IonIcon icon={logoWhatsapp}></IonIcon>
-                          </IonButton>
+                          </IonButton> */}
 
                           <IonButton size="small" color="warning" onClick={() => history.push(`/client-form/${client.id}`)}>
                             <IonIcon icon={pencilOutline} />
@@ -271,54 +279,59 @@ const ClientsList: React.FC = () => {
                   ))}
                     </IonGrid>
                   ) : (
-                    filteredClients.map(client => (
-                      <IonCard key={client.id} className="client-card">
-                        <IonCardHeader>
-                          <IonGrid>
-                            <IonRow className="ion-align-items-center ion-justify-content-between">
-                              <IonCol>
-                                <strong style={{ fontSize: '1.2rem' }}>{client.name}</strong><br />
-                                <span>{client.phone}</span>
-                              </IonCol>
-                              <IonCol size="auto" className="ion-text-right">
-                                <IonButton size="small" color="warning" onClick={() => history.push(`/client-form/${client.id}`)}>
-                                  <IonIcon icon={pencilOutline} />
-                                </IonButton>
-                                <IonButton size="small" color="danger" onClick={() => deleteClient(client)}>
-                                  <IonIcon icon={trashOutline} />
-                                </IonButton>
-                                <IonButton size="small" fill="clear" onClick={() => toggleExpand(client.id)}>
-                                  <IonIcon icon={expandedClientId === client.id ? chevronUpOutline : chevronDownOutline} />
-                                </IonButton>
-                              </IonCol>
-                            </IonRow>
-                          </IonGrid>
-                        </IonCardHeader>
-                        {expandedClientId === client.id && (
-                          <IonCardContent>
-                            {clientExercises.length > 0 ? (
-                              <IonGrid className="table-bordered exercises-table">
-                                <IonRow className="header-row">
-                                  <IonCol>Ejercicio</IonCol>
-                                  <IonCol>Peso (kg)</IonCol>
-                                  <IonCol>Reps</IonCol>
-                                </IonRow>
-                                {clientExercises.map((ex, i) => (
+                      <IonAccordionGroup expand="inset">
+                        {filteredClients.map((client) => {
+                          const exs = clientExercises.filter((e) => e.id_client === client.id);
+                          return (
+                            <IonAccordion value={`client-${client.id}`} key={client.id} className="client-accordion">
+                              <IonItem slot="header" color="light" lines="inset" className="client-header">
+                                <IonLabel>
+                                  <div style={{ fontWeight: "bold", fontSize: "1.1rem" }}>{client.name}</div>
+                                  <div style={{ fontSize: "0.9rem", color: "#666" }}>{client.phone}</div>
+                                </IonLabel>
+                                <IonButtons slot="end">
+                                  <IonButton size="small" color={"success"} onClick={(e) => { e.stopPropagation(); addExerciseToCLient(client.id); }}>
+                                    <IonIcon icon={add} />
+                                  </IonButton>
+                                  {/*  <IonButton size="small" color="success" onClick={(e) => { e.stopPropagation(); shareExercises(client); }}>
+                                    <IonIcon icon={logoWhatsapp} />
+                                  </IonButton> */}
+                                  <IonButton size="small" color="warning" onClick={(e) => { e.stopPropagation(); history.push(`/client-form/${client.id}`) }}>
+                                    <IonIcon icon={pencilOutline} />
+                                  </IonButton>
+                                  <IonButton size="small" color="danger" onClick={(e) => { e.stopPropagation(); setClientToDelete(client); setShowAlert(true); }}>
+                                    <IonIcon icon={trashOutline} />
+                                  </IonButton>
+                                </IonButtons>
+                              </IonItem>
+
+                              <div slot="content" className="ion-padding">
+                                {exs.length === 0 ? (
+                                  <IonText>
+                                    <em>Sin ejercicios aún.</em>
+                                  </IonText>
+                                ) : (
+                                  <IonGrid className="table-bordered exercises-subtable" style={{ fontSize: "0.9rem" }}>
+                                    <IonRow className="header-row exercises-header">
+                                      <IonCol><strong>Ejercicio</strong></IonCol>
+                                      <IonCol><strong>Peso (kg)</strong></IonCol>
+                                      <IonCol><strong>Reps</strong></IonCol>
+                                    </IonRow>
+                                      {exs.map((ex, i) => (
                                   <IonRow key={i}>
                                     <IonCol>{ex.name}</IonCol>
                                     <IonCol>{ex.max_weight}</IonCol>
                                     <IonCol>{ex.max_reps}</IonCol>
                                   </IonRow>
                                 ))}
-                              </IonGrid>
-                            ) : (
-                              <p>Sin ejercicios registrados</p>
-                            )}
-                          </IonCardContent>
-                        )}
-                      </IonCard>
-                    ))
-                  )
+                                    </IonGrid>
+                                )}
+                              </div>
+                            </IonAccordion>
+                          );
+                        })}
+                      </IonAccordionGroup>
+                    )
 
                 )
           )}
